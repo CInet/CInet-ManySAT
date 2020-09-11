@@ -36,7 +36,8 @@ correct answer only with a configurable probability. The probabilistic solver
 is generally faster but has a higher risk of not terminating at all.
 
 Since the two solvers are implemented in external programs at the moment,
-this class does the L<CInet::ManySAT::ClauseStorage> role.
+this class does the L<CInet::ManySAT::ClauseStorage> role. See its documentation
+for how to read a formula into this solver.
 
 =cut
 
@@ -47,10 +48,36 @@ use IPC::Run qw(run);
 use CInet::Alien::DSHARP qw(dsharp);
 use CInet::Alien::GANAK  qw(ganak);
 
+=head2 Methods
+
+=head3 new
+
+    my $solver = CInet::ManySAT::Count->new;
+
+Create a new instance of a #SAT solver. Use C<read> and C<add> of
+L<CInet::ManySAT::ClauseStorage> to fill it with clauses.
+
+=cut
+
 sub new {
     my $class = shift;
     bless { @_ }, $class
 }
+
+=head3 count
+
+    say $solver->count(%opts);
+    say $solver->count($assump, %opts);
+
+Exactly count the models of the formula stored in the solver.
+
+If the first argument C<$assump> is an arrayref, the contained literals
+are added as assumptions for this solver invocation. The remaining
+arguments are a hash of options. The only supported option currently
+is C<-risk> which, when non-zero, causes the solver to call the
+probabilistic solver via L<count_probably> instead.
+
+=cut
 
 sub count {
     no warnings 'uninitialized';
@@ -72,6 +99,18 @@ sub count {
     $mc
 }
 
+=head3 count_probably
+
+    say $solver->count_probably(%opts);
+    say $solver->count_probably($assump, %opts);
+
+Probably exactly count the models of the formula stored in the solver.
+
+This method accepts the same arguments as L<count>. If the C<-risk> option
+is exactly 0, it switches to L<count> instead. The default risk is 0.05.
+
+=cut
+
 sub count_probably {
     no warnings 'uninitialized';
     my $self = shift;
@@ -92,7 +131,16 @@ sub count_probably {
 
 =head2 EXPORTS
 
+The following functions are exported on demand:
+
 =head3 sat_count
+
+    sat_count($cnf, $assump, %opts);
+    sat_count($cnf, %opts);
+
+This function is equivalent to
+
+    CInet::ManySAT::Count->new->read($cnf)->count($assump, %opts);
 
 =cut
 
@@ -102,6 +150,13 @@ sub sat_count {
 }
 
 =head3 sat_count_probably
+
+    sat_count_probably($cnf, $assump, %opts);
+    sat_count_probably($cnf, %opts);
+
+This function is equivalent to
+
+    CInet::ManySAT::Count->new->read($cnf)->count_probably($assump, %opts);
 
 =cut
 
