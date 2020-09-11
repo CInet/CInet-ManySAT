@@ -126,18 +126,20 @@ clears the array of assumptions.
 sub dimacs {
     my $self = shift;
 
-    my $clauses = $self->_finish_current->{clauses};
-    my $assump = $self->{assump};
+    # FIXME: Making a copy is wasteful but simplifies the inclusion
+    # of assumptions.
+    my @clauses = $self->_finish_current->{clauses}->@*;
+    push @clauses, map { [$_, 0] } $self->{assump}->@*;
+    my $nclauses = 0+ @clauses;
+    my $nvars = max($self->{maxvar} // 0, map { abs } $self->{assump}->@*);
     $self->{assump} = [];
 
-    my $nvars = max($self->{maxvar} // 0, map { abs } @$assump);
-    my $nclauses = @$clauses + @$assump;
     my $idx = -2;
     return sub {
         return "p cnf $nvars $nclauses\n" if ++$idx == -1;
-        return undef if $idx > $clauses->$#*;
+        return undef if $idx >= @clauses;
 
-        my $clause = $clauses->[$idx];
+        my $clause = $clauses[$idx];
         push $clause->@*, 0 unless $clause->[$clause->$#*] == 0;
         return join(' ', @$clause) . "\n";
     };
