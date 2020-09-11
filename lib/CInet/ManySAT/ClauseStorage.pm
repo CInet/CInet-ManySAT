@@ -6,9 +6,9 @@ CInet::ManySAT::ClauseStorage - Storing clauses before calling external solvers
 
 =head1 SYNOPSIS
 
-    $solver->add(@extra_clauses);   # add more clauses to the solver
-    $solver->assume(1, -2, 3);      # fix some variable values for next ->dimacs
-    my $feed = $solver->dimacs;     # on the fly DIMACS CNF file generation
+    $solver->add(@clauses);       # add clauses to the solver
+    $solver->assume(1, -2, 3);    # fix some variable values for next ->dimacs
+    my $feed = $solver->dimacs;   # on the fly DIMACS CNF file generation
 
 =cut
 
@@ -54,6 +54,15 @@ variable number seen in the clauses.
 
 =cut
 
+sub _update_maxvar {
+    my ($self, $clause) = @_;
+    $self->{maxvar} = max(
+        $self->{maxvar} // 0,
+        map { abs } @$clause
+    );
+    $self
+}
+
 sub _finish_current {
     my $self = shift;
 
@@ -62,11 +71,7 @@ sub _finish_current {
 
     if ($cur->$#* > 0) {
         push $self->{clauses}->@*, $cur;
-        # Update maximal variable
-        $self->{maxvar} = max(
-            $self->{maxvar} // 0,
-            map { abs } @$cur
-        );
+        $self->_update_maxvar($cur);
     }
     $self
 }
@@ -75,8 +80,10 @@ sub add {
     my $self = shift;
 
     for (@_) {
+        no warnings 'uninitialized';
         if (reftype($_) eq 'ARRAY') {
             $self->_finish_current;
+            $self->_update_maxvar($_);
             push $self->{clauses}->@*, $_;
         }
         else {
@@ -124,15 +131,15 @@ sub dimacs {
     $self->{assump} = [];
 
     my $nvars = max($self->{maxvar} // 0, map { abs } @$assump);
-    my $nclauses = @$clauses* + @$assump;
-    my $init = 0;
+    my $nclauses = @$clauses + @$assump;
+    my $idx = -2;
     return sub {
-        return "p cnf $nvars $nclauses" unless $init++;
+        return "p cnf $nvars $nclauses\n" if ++$idx == -1;
+        return undef if $idx > $clauses->$#*;
 
-        my $clause = $clauses->();
-        return undef if not defined $clause;
+        my $clause = $clauses->[$idx];
         push $clause->@*, 0 unless $clause->[$clause->$#*] == 0;
-        return join ' ', @$clause;
+        return join(' ', @$clause) . "\n";
     };
 }
 

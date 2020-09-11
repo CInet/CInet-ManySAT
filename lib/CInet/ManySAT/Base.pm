@@ -120,6 +120,7 @@ sub read {
 }
 
 sub _read_cnf {
+    no warnings 'uninitialized';
     my $cnf = shift;
 
     if (reftype($cnf) eq 'ARRAY') {
@@ -144,6 +145,7 @@ sub _read_cnf {
                 return undef;
             }
             my $line = readline $fh;
+            chomp $line;
             goto __SUB__ if not length($line) or $line =~ /^[pc]/;
             return _read_clause($line);
         };
@@ -151,7 +153,7 @@ sub _read_cnf {
     else {
         my @lines = split /\n/, $cnf;
         return sub {
-            return undef if not @$lines;
+            return undef if not @lines;
             my $line = shift @lines;
             goto __SUB__ if not length($line) or $line =~ /^[pc]/;
             return _read_clause($line);
@@ -160,6 +162,7 @@ sub _read_cnf {
 }
 
 sub _read_clause {
+    no warnings 'uninitialized';
     my $clause = shift;
     return $clause if reftype($clause) eq 'ARRAY';
     return [split / /, $clause];
