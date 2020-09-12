@@ -44,13 +44,13 @@ method on top.
     $solver->add([1, -2]);   # add clause C<2 ⇒ 1>
 
 Adds literals to the current clause or clauses to the formula.
-Two types of input are accepted, which can be freely mixed:
+Two types of input are accepted, which can be freely mixed in C<@_>:
 
 =over
 
 =item *
 
-Non-zero integers denote literals (a variable number and a polarity) which
+Non-zero integers denote literals (a variable number and a sign) which
 are pushed onto the current clause. A zero integer terminates the current
 clause, pushes it onto the formula and starts a new current clause.
 
