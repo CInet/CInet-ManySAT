@@ -10,7 +10,7 @@ CInet::ManySAT - A collection of SAT solvers
     $solver->read($cnf);          # add clauses to the solver
 
     # Check satisfiability, obtain a witness
-    TODO  # say $solver->model if $solver->solve == 1;
+    say join(" ", $solver->model->@*) if $solver->solve;
 
     # Count satisfying assignments
     say $solver->count_probably;  # probably exact count with 5% risk
@@ -50,7 +50,17 @@ standard DIMACS CNF format.
 =head2 Satisfiability and consistency checking
 
 TODO
-Also ref incremental solver.
+
+
+
+If your problem requires checking the same formula over and over again on
+different sets of assumptions (maybe because you want to compute a projection
+of the set of satisfying assignments to your formula), the solver contained
+in this class will not make you very happy. Since C<CInet::ManySAT> has to
+support a range of different solvers, it writes a temporary DIMACS CNF file
+for every solver invocation, which slows down any large loop around them.
+You should consider using the L<CInet::ManySAT::Incremental> solver, which
+is specialized to those tasks.
 
 =head2 Model counting
 
@@ -96,18 +106,55 @@ sub new {
     bless { @_ }, $class
 }
 
+=head3 model
+
+    my $model = $solver->model($assump);
+    say join(' ', $model->@*) if defined $model;
+
+    say "consistent" if $solver->model($assignment);
+
+Checks the formula for satisfiability and returns a witness model in case
+it is satisfiable. Otherwise returns C<undef>. If the solver gave up or
+terminated abnormally, an exception is raised.
+
+The first argument C<$assump> is an optional arrayref defining the values
+of some of the variables for the current run only. Therefore this method
+can be used for model checking or consistency checking as well.
+
+=cut
+
+sub model {
+    no warnings 'uninitialized';
+    my $self = shift;
+
+    if (reftype($_[0]) eq 'ARRAY') {
+        $self->assume(shift->@*);
+    }
+
+    my $feed = $self->dimacs;
+    # cadical returns 0 on error and 10 or 20 when it terminated.
+    run [cadical], $feed, \my $out;
+    my $status = $? >> 8;
+    die "cadical exited with errors" if $status != 10 and $status != 20;
+
+    return undef unless $out =~ /^s SATISFIABLE/m;
+    [ grep { $_ } map { /(-\d+)/g } grep { /^v / } split /\n/, $out ]
+}
+
 =head3 count
 
-    say $solver->count(%opts);
-    say $solver->count($assump, %opts);
+    say $solver->count($assump);
+    say $solver->count($assump, risk => 0.05);
 
 Exactly count the models of the formula stored in the solver.
 
-If the first argument C<$assump> is an arrayref, the contained literals
-are added as assumptions for this solver invocation. The remaining
-arguments are a hash of options. The only supported option currently
-is C<-risk> which, when non-zero, causes the solver to call the
-probabilistic solver via L<count_probably> instead.
+The first argument C<$assump> is an optional arrayref defining the values
+of some of the variables for the current run only. Therefore this method
+can be used for model checking or consistency checking as well.
+
+The remaining arguments are treated as options. The only supported option
+currently is C<risk>. If specified with a non-zero probability, it causes
+the probabilistically exact solver to be invoked.
 
 =cut
 
@@ -120,81 +167,44 @@ sub count {
     }
 
     my %opts = @_;
-    return $self->count_probably(%opts)
-        if defined $opts{'-risk'} and $opts{'-risk'} != 0;
-
     my $feed = $self->dimacs;
-    die "dsharp exited with code @{[ $? >> 8 ]}"
-        unless run [dsharp], $feed, \my $out;
-
-    my $mc = first { $_ } map { /^#SAT.*?(\d+)$/g } split /\n/, $out;
-    $mc
-}
-
-=head3 count_probably
-
-    say $solver->count_probably(%opts);
-    say $solver->count_probably($assump, %opts);
-
-Probably exactly count the models of the formula stored in the solver.
-
-This method accepts the same arguments as L<count>. If the C<-risk> option
-is exactly 0, it switches to L<count> instead. The default risk is 0.05.
-
-=cut
-
-sub count_probably {
-    no warnings 'uninitialized';
-    my $self = shift;
-
-    if (reftype($_[0]) eq 'ARRAY') {
-        $self->assume(shift->@*);
+    my $risk = $opts{risk} // 0;
+    if ($risk == 0) {
+        die "dsharp exited with code @{[ $? >> 8 ]}"
+            unless run [dsharp], $feed, \my $out;
+        my $mc = first { $_ } map { /^#SAT.*?(\d+)$/g } split /\n/, $out;
+        $mc
     }
-
-    my %opts = @_;
-    my $risk = $opts{'-risk'} // 0.05;
-    my $feed = $self->dimacs;
-    die "ganak exited with code @{[ $? >> 8 ]}"
-        unless run [ganak, '-delta', $risk, '-'], $feed, \my $out;
-
-    my $mc = first { $_ } map { /^s mc (\d+)/g } split /\n/, $out;
-    $mc
+    elsif (0 < $risk and $risk < 1) {
+        die "ganak exited with code @{[ $? >> 8 ]}"
+            unless run [ganak, '-delta', $risk, '-'], $feed, \my $out;
+        my $mc = first { $_ } map { /^s mc (\d+)/g } split /\n/, $out;
+        $mc
+    }
+    else {
+        die "risk value '$opts{risk}' is not a probability";
+    }
 }
 
 =head2 EXPORTS
 
 The following functions are exported on demand:
 
-=head3 sat_count
-
+    sat_model($cnf, $assump);
     sat_count($cnf, $assump, %opts);
-    sat_count($cnf, %opts);
 
-This function is equivalent to
-
-    CInet::ManySAT->new->read($cnf)->count($assump, %opts);
+Each C<< sat_$action($cnf, @_) >> is equivalent to C<< CInet::ManySAT->new->read($cnf)->$action(@_) >>.
 
 =cut
+
+sub sat_model {
+    my $cnf = shift;
+    __PACKAGE__->new->read($cnf)->model(@_)
+}
 
 sub sat_count {
     my $cnf = shift;
     __PACKAGE__->new->read($cnf)->count(@_)
-}
-
-=head3 sat_count_probably
-
-    sat_count_probably($cnf, $assump, %opts);
-    sat_count_probably($cnf, %opts);
-
-This function is equivalent to
-
-    CInet::ManySAT->new->read($cnf)->count_probably($assump, %opts);
-
-=cut
-
-sub sat_count_probably {
-    my $cnf = shift;
-    __PACKAGE__->new->read($cnf)->count_probably(@_)
 }
 
 =head1 AUTHOR
