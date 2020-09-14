@@ -88,21 +88,29 @@ sub cancel {
 
     my @models = $all->list;
 
-Eagerly obtain all (remaining) models and return them as a list. Use this
-method with caution as it may eat huge amounts of memory.
+Eagerly obtain all (remaining) models. In list context, return them
+as a list. In scalar context, throw the models away and just return
+their count.
+
+Use this method in list context with caution as it may eat huge
+amounts of memory. In scalar context, this is more useful, as there
+are some formulas (in particular those with few solutions on a huge
+search space) where an AllSAT solver enumerates the solutions faster
+than a (knowledge-compiling) #SAT solver would be able to count them.
 
 =cut
 
 sub list {
     my $self = shift;
 
-    my @list;
+    my (@list, $count);
     while (defined(my $model = $self->next)) {
-        push @list, $model;
+        push @list, $model if wantarray;
+        $count++;
     }
     $self->_finish;
 
-    @list
+    wantarray ? @list : $count // 0
 }
 
 sub _finish {
