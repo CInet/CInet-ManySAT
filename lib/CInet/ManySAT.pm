@@ -135,10 +135,10 @@ sub model {
     # cadical returns 0 on error and 10 or 20 when it terminated.
     run [cadical], $feed, \my $out;
     my $status = $? >> 8;
-    die "cadical exited with errors" if $status != 10 and $status != 20;
+    die "cadical exited with an error" if $status != 10 and $status != 20;
 
     return undef unless $out =~ /^s SATISFIABLE/m;
-    [ grep { $_ } map { /(-\d+)/g } grep { /^v / } split /\n/, $out ]
+    [ grep { $_ } map { /(-?\d+)/g } grep { /^v / } split /\n/, $out ]
 }
 
 =head3 count
