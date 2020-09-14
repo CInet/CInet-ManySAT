@@ -9,7 +9,7 @@ CInet::ManySAT::Incremental - An incremental SAT solver
     my $solver = CInet::ManySAT::Incremental->new;
     $solver->read($cnf);   # add clauses to the solver
     say $solver->solve;    # result is 0, 1 or undef
-    say $solver->solve([-2]);  # add assumptions on the fly
+    say $solver->model([-2]);  # add assumptions on the fly
 
 =head2 VERSION
 
@@ -35,7 +35,7 @@ with 'CInet::ManySAT::Base';
 C<CInet::ManySAT::Incremental> provides only a B<SAT solver>. Such a solver
 receives a Boolean formula and determines whether it has a satisfying
 assignment. In that case, it provides proof by exhibiting such an assignment,
-called a I<witness>, that can be independently verified.
+called a I<witness> or a I<model>, that can be independently verified.
 
 The solver is intended for I<incremental> usage, which means that cycles of
 solving the formula, then adding more clauses, solving again, or evaluating
@@ -159,50 +159,27 @@ sub solve {
 
 =head3 model
 
-    my $model = $solver->model
-        if $solver->solve == 1;
+    my $model = $solver->model;
+    say "consistent" if $solver->model($assump);
 
-Returns a satisfying assignment if the last run of L<solve> determined
-that the formula was satisfiable. The witness is an arrayref of literals
-in which the variables appear one after another negated or non-negated,
-indicating whether they are false or true, respectively, in the assignment.
+If the formula is satisfiable, this method returns a witness for that.
+The witness is an arrayref of literals in which all variables appear
+one after another negated or non-negated, indicating whether they are
+false or true, respectively, in the assignment.
 
-Calling this method under any circumstance B<other than> the last L<solve>
-returning C<1> is an error and can cause an uncatchable abort from the
-solver library internals. It is recommended to use the L<witness> method
-instead of combining L<solve> and L<model>.
+If the formula is unsatisfiable, it returns C<undef>. If the solver
+could not solve the problem, an exception is raised that the caller
+can catch.
 
 =cut
 
 sub model {
     my $self = shift;
-    my @witness;
-    push @witness, $self->{cadical}->val($_) for 1 .. $self->{vars};
-    \@witness
-}
-
-=head3 witness
-
-    my $model = $solver->witness;
-    say "consistent" if defined $solver->witness($assump);
-
-This method combines L<solve> and L<model>. Additional assumptions to
-the solver invocation can be passed in an arrayref.
-
-If the formula is satisfiable, this method returns a witness for that.
-If the formula is unsatisfiable, it returns C<undef>. If the solver
-could not solve the problem, a (Perl) exception is raised that the
-caller can catch.
-
-=cut
-
-sub witness {
-    my $self = shift;
     my $sat = $self->solve(@_);
 
     not(defined $sat) ? die "cadical gave up" :
         not($sat) ? undef :
-            $self->model
+            [ map { $self->{cadical}->val($_) } 1 .. $self->{vars} ]
 }
 
 =head1 AUTHOR
