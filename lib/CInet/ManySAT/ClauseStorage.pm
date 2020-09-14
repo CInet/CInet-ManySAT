@@ -7,7 +7,6 @@ CInet::ManySAT::ClauseStorage - Storing clauses before calling external solvers
 =head1 SYNOPSIS
 
     $solver->add(@clauses);       # add clauses to the solver
-    $solver->assume(1, -2, 3);    # fix some variable values for next ->dimacs
     my $feed = $solver->dimacs;   # on the fly DIMACS CNF file generation
 
 =cut
@@ -32,8 +31,8 @@ interface by storing clauses in an internal arrayref. This is necessary for
 wrapping solvers which are only available as external programs which need
 to be fed a complete formula in the DIMACS CNF format upon startup.
 
-This role implements the C<add> and C<assume> methods required by
-L<CInet::ManySAT::Base> and provides another method on top.
+This role implements the C<add> method required by L<CInet::ManySAT::Base>
+and provides another method on top.
 
 =head2 Implementation of CInet::ManySAT::Base
 
@@ -94,52 +93,43 @@ sub add {
     $self
 }
 
-=head3 assume
-
-    $solver->assume(2, -1);  # assume that 2 is true and 1 is false
-
-Assumptions are stored as an arrayref at C<< $self->{assump} >>.
-
-=cut
-
-sub assume {
-    my $self = shift;
-    push $self->{assump}->@*, @_;
-    $self
-}
-
 =head2 Provided methods
 
 =head3 dimacs
 
-    my $feed = $solver->dimacs;
+    my $feed = $solver->dimacs($assump);
 
 Returns a coderef which lazily generates the lines of a DIMACS CNF file
-representing the stored formula, that is the clauses and assumptions.
-Call this code reference until it returns C<undef>.
+representing the stored formula. The first argument C<$assump> is an optional
+arrayref which contains a partial assignment to be enforced using one clause
+for each assumption after the formula. Call this code reference until it
+returns C<undef>.
 
-Calling this method closes and adds the current clause to the formula and
-clears the array of assumptions.
+Calling this method closes and adds the current clause to the formula.
 
 =cut
 
 sub dimacs {
     my $self = shift;
 
-    # FIXME: Making a copy is wasteful but simplifies the inclusion
-    # of assumptions.
-    my @clauses = $self->_finish_current->{clauses}->@*;
-    push @clauses, map { [$_, 0] } $self->{assump}->@*;
-    my $nclauses = 0+ @clauses;
-    my $nvars = max($self->{maxvar} // 0, map { abs } $self->{assump}->@*);
-    $self->{assump} = [];
+    my $assump = do {
+        no warnings 'uninitialized';
+        reftype($_[0]) eq 'ARRAY' ? shift : [ ];
+    };
 
+    my $clauses = $self->_finish_current->{clauses};
+    my $assumpcl = join "\n", map { "$_ 0" } $assump->@*;
+    my $nclauses = @$clauses + @$assump;
+    my $nvars = max($self->{maxvar} // 0, map { abs } $assump->@*);
+
+    # XXX: this is spaghetti but it's short.
     my $idx = -2;
     return sub {
         return "p cnf $nvars $nclauses\n" if ++$idx == -1;
-        return undef if $idx >= @clauses;
+        return $assumpcl if $idx == @$clauses;
+        return undef if $idx > @$clauses;
 
-        my $clause = $clauses[$idx];
+        my $clause = $clauses->[$idx];
         push $clause->@*, 0 unless $clause->[$clause->$#*] == 0;
         return join(' ', @$clause) . "\n";
     };

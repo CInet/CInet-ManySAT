@@ -124,14 +124,14 @@ can be used for model checking or consistency checking as well.
 =cut
 
 sub model {
-    no warnings 'uninitialized';
     my $self = shift;
 
-    if (reftype($_[0]) eq 'ARRAY') {
-        $self->assume(shift->@*);
-    }
+    my $assump = do {
+        no warnings 'uninitialized';
+        reftype($_[0]) eq 'ARRAY' ? shift : [ ]
+    };
 
-    my $feed = $self->dimacs;
+    my $feed = $self->dimacs($assump);
     # cadical returns 0 on error and 10 or 20 when it terminated.
     run [cadical], $feed, \my $out;
     my $status = $? >> 8;
@@ -159,15 +159,15 @@ the probabilistically exact solver to be invoked.
 =cut
 
 sub count {
-    no warnings 'uninitialized';
     my $self = shift;
 
-    if (reftype($_[0]) eq 'ARRAY') {
-        $self->assume(shift->@*);
-    }
+    my $assump = do {
+        no warnings 'uninitialized';
+        reftype($_[0]) eq 'ARRAY' ? shift : [ ]
+    };
 
     my %opts = @_;
-    my $feed = $self->dimacs;
+    my $feed = $self->dimacs($assump);
     my $risk = $opts{risk} // 0;
     if ($risk == 0) {
         die "dsharp exited with code @{[ $? >> 8 ]}"

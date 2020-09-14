@@ -93,21 +93,6 @@ sub add {
     $self
 }
 
-# Push the assumptions to an internal arrayref. The point is that we need
-# to include assumption variables when computing maxvar (which we need in
-# order to retrieve the entire model from CaDiCaL), but if the maxvar comes
-# from transient assumptions, we don't know how to reduce it afterwards.
-#
-# So maxvar needs to reflect only the clauses stored permanently in the
-# solver and we take assumptions into account for maxvar temporarily right
-# before solving, which is when we commit the stored assumptions to the
-# solver as well.
-sub assume {
-    my $self = shift;
-    push $self->{assump}->@*, @_;
-    $self
-}
-
 =head3 new
 
     my $solver = CInet::ManySAT::Incremental->new;
@@ -128,8 +113,8 @@ sub new {
     my $res = $solver->solve;
     say "consistent" if $solver->solve($assump);
 
-Invokes the SAT solver on the current formula and the current set of
-assumptions. Additional assumptions can be optionally passed in an
+Invokes the SAT solver on the current formula. Assumptions (that is a
+partial assignment of the variables) can be optionally passed in an
 argument arrayref.
 
 This method returns C<1> when the formula is satisfiable, it returns
@@ -139,16 +124,16 @@ was interrupted. All assumptions are cleared afterwards.
 =cut
 
 sub solve {
-    no warnings 'uninitialized';
     my $self = shift;
 
-    if (reftype($_[0]) eq 'ARRAY') {
-        $self->assume(shift->@*);
-    }
+    my $assump = do {
+        no warnings 'uninitialized';
+        reftype($_[0]) eq 'ARRAY' ?
+            shift : [ ]
+    };
 
-    my $vars = max($self->{maxvar}, map { abs } $self->{assump}->@*);
-    $self->{cadical}->assume($_) for $self->{assump}->@*;
-    $self->{assump} = [];
+    my $vars = max($self->{maxvar}, map { abs } $assump->@*);
+    $self->{cadical}->assume($_) for $assump->@*;
     $self->{vars} = $vars; # for ->model
 
     my $code = $self->{cadical}->solve;

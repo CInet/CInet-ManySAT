@@ -8,8 +8,8 @@ CInet::ManySAT::Base - Common role for ManySAT solvers
 
     $solver->read($cnf_file);       # read a DIMACS file or string
     $solver->add(@extra_clauses);   # add more clauses to the solver
-    $solver->assume(1, -2, 3);      # fix some variable values for next $action
     $solver->$action;               # implemented elsewhere
+    $solver->$action([1, -2, 3]);   # pass assumptions
 
 =cut
 
@@ -30,10 +30,10 @@ for common formula input. Use L<Role::Tiny::With> to compose it into
 your class. All methods on solver objects which do not explicitly
 query for data should return the invocant to enable method chaining.
 
-The role requires two methods to be implemented and provides one
+The role requires one method to be implemented and provides one
 method on top.
 
-=head2 Required methods
+=head2 Required method
 
 =head3 add
 
@@ -62,18 +62,7 @@ Terminating the arrayref with a zero literal is not required but allowed.
 
 =back
 
-=head3 assume
-
-    $solver->assume(2, -1);  # assume that 2 is true and 1 is false
-
-Adds assumptions about the value of some variables to the formula.
-Adding a literal C<$lit> to the assumptions is like adding the clause
-C<$lit 0> to the formula using L<add>, except that assumptions are
-automatically reset after the next solver invocation.
-
-=cut
-
-requires qw(add assume);
+requires qw(add);
 
 =head2 Provided methods
 
