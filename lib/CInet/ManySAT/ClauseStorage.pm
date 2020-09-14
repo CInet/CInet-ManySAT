@@ -100,10 +100,13 @@ sub add {
     my $feed = $solver->dimacs($assump);
 
 Returns a coderef which lazily generates the lines of a DIMACS CNF file
-representing the stored formula. The first argument C<$assump> is an optional
-arrayref which contains a partial assignment to be enforced using one clause
-for each assumption after the formula. Call this code reference until it
-returns C<undef>.
+representing the stored formula. It is not guaranteed that each call to
+the returned coderef returns only a single line, it might be many.
+Call this code reference until it returns C<undef>.
+
+The first argument C<$assump> is an optional arrayref which contains a
+partial assignment to be enforced using one clause for each assumption
+after the formula.
 
 Calling this method closes and adds the current clause to the formula.
 

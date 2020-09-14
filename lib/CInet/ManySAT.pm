@@ -6,20 +6,23 @@ CInet::ManySAT - A collection of SAT solvers
 
 =head1 SYNOPSIS
 
-    my $solver = CInet::ManySAT->new;
-    $solver->read($cnf);          # add clauses to the solver
+    # Add clauses to a new solver
+    my $solver = CInet::ManySAT->new->read($cnf);
 
     # Check satisfiability, obtain a witness
-    say join(" ", $solver->model->@*) if $solver->solve;
+    my $model = $solver->model;
+    say join(" ", $model->@*) if defined $model;
 
     # Count satisfying assignments
-    say $solver->count_probably;  # probably exact count with 5% risk
-    say $solver->count([-2]);     # exact count of all models where 2 is false
-
-    say $solver->count([-2], -risk => 0.01);  # does what you mean
+    say $solver->count(risk => 0.05);   # probably exact count with 5% risk
+    say $solver->count([-2]);  # exact count of all models where 2 is false
 
     # Enumerate all satisfying assignments
-    TODO
+    my $all = $solver->all;
+    while (defined(my $model = $all->next)) {
+        say join(" ", $model->@*);
+        $all->cancel and last if ++$count > $caring_for;
+    }
 
 =cut
 
@@ -91,17 +94,29 @@ method with its optional C<risk> parameter.
 
 =head2 Model enumeration
 
-TODO
+After producing a single model and counting all models, the last task
+supported is to enumerate all models. This problem is known as B<AllSAT>.
+This module provides an interface to a solver which lazily produces all
+the models of a formula. The solver usually starts outputting models
+immediately (if it can find them) but gets put to sleep by the operating
+system when the IPC buffer is filled up. This way, a slow application
+processing the models does not cause the solver to fill up extraordinary
+amounts of memory nor the solver to "run away" but maintain a reasonably
+full pool of models for immediate reading. The enumeration is cancelable.
 
 =cut
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(
-    sat_solve sat_witness
-    sat_count sat_count_probably
+    sat_model sat_count sat_all
 );
 
 use IPC::Run qw(run);
+use IPC::Open3;
+use IO::Null;
+
+use CInet::ManySAT::All;
+
 use CInet::Alien::CaDiCaL qw(cadical);
 use CInet::Alien::DSHARP qw(dsharp);
 use CInet::Alien::GANAK qw(ganak);
@@ -161,17 +176,18 @@ sub model {
 =head3 count
 
     say $solver->count($assump);
-    say $solver->count($assump, risk => 0.05);
+    say $solver->count($assump, risk => 0.05); # probably correct
 
 Exactly count the models of the formula stored in the solver.
 
 The first argument C<$assump> is an optional arrayref defining the values
-of some of the variables for the current run only. Therefore this method
-can be used for model checking or consistency checking as well.
+of some of the variables for the current run only.
 
 The remaining arguments are treated as options. The only supported option
 currently is C<risk>. If specified with a non-zero probability, it causes
 the probabilistically exact solver to be invoked.
+
+This method raises an error if the solver terminated abnormally.
 
 =cut
 
@@ -203,12 +219,53 @@ sub count {
     }
 }
 
+=head3 all
+
+    say for $solver->all($assump)->list;
+    say for $all->list;
+
+    # Or more memory-friendly:
+    while (defined(my $model = $all->next)) {
+        say $model;
+        $all->cancel and last if had_enough;
+    }
+
+Enumerate all models of the formula stored in the solver.
+
+The first argument C<$assump> is an optional arrayref defining the values
+of some of the variables for the current run only.
+
+This method returns an object of type L<CInet::ManySAT::All> which can be
+used to control the enumeration.
+
+=cut
+
+sub all {
+    my $self = shift;
+
+    my $assump = do {
+        no warnings 'uninitialized';
+        reftype($_[0]) eq 'ARRAY' ? shift : [ ]
+    };
+
+    my $feed = $self->dimacs($assump);
+    my ($in, $out);
+    my $pid = open3 $in, $out, IO::Null->new, nbc_minisat_all;
+    while (defined(my $line = $feed->())) {
+        print {$in} $line;
+    }
+    close $in;
+
+    CInet::ManySAT::All->new($pid => $out)
+}
+
 =head2 EXPORTS
 
 The following functions are exported on demand:
 
-    sat_model($cnf, $assump);
-    sat_count($cnf, $assump, %opts);
+    my $model = sat_model ($cnf, $assump, %opts);
+    my $count = sat_count ($cnf, $assump, %opts);
+    my $all   = sat_all   ($cnf, $assump, %opts);
 
 Each C<< sat_$action($cnf, @_) >> is equivalent to C<< CInet::ManySAT->new->read($cnf)->$action(@_) >>.
 
@@ -222,6 +279,11 @@ sub sat_model {
 sub sat_count {
     my $cnf = shift;
     __PACKAGE__->new->read($cnf)->count(@_)
+}
+
+sub sat_all {
+    my $cnf = shift;
+    __PACKAGE__->new->read($cnf)->all(@_)
 }
 
 =head1 AUTHOR
