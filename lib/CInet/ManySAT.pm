@@ -49,9 +49,25 @@ standard DIMACS CNF format.
 
 =head2 Satisfiability and consistency checking
 
-TODO
+In its simplest form, SAT is about deciding whether a Boolean formula has
+a solution, that is an assignment of true and false to the variables which
+I<satisfies> all the clauses of the formula simultaneously. The SAT solver
+is available through the L<model> method which returns either a I<model>
+of the formula or C<undef> if the formula is not satisfiable. In this
+documentation, the word "model" is used for "satisfying assignment".
+Thus the L<model> method is a witnessing SAT solver, in that it provides
+you with a witness for the "SAT" answer (but not the "UNSAT" answer).
 
+The L<model> method accepts optional I<assumptions>. These come in the form
+of an arrayref of non-zero integers, just like the clauses of the formula.
+The assumptions fix the truth value of some of the variables and they are
+valid only for the current invocation of the solver. In this way, you can
+use the solver to check if an assignment is I<consistent> with the formula,
+that is whether this partial assignment can be extended to a satisfying one.
+It can also be used to simply evaluate the formula, verifying that a full
+assignment is actually a model.
 
+=head3 Low-overhead incremental solver
 
 If your problem requires checking the same formula over and over again on
 different sets of assumptions (maybe because you want to compute a projection
@@ -65,12 +81,13 @@ is specialized to those tasks.
 =head2 Model counting
 
 We provide two B<#SAT solvers>. Such a solver determines the number of
-satisfying assignments to it, potentially faster than by iterating over
-them all. One of the solvers is exact and the other is probabilistically
+satisfying assignments to a formula, potentially faster than by iterating
+over them all. One of the solvers is exact and the other is probabilistically
 exact, meaning that it delivers the correct answer only with a configurable
 probability. The probabilistic solver is generally faster but it may give
 up on the formula entirely if it finds that it cannot guarantee exactness
-with the given probability.
+with the given probability. These solvers are accessible through the L<count>
+method with its optional C<risk> parameter.
 
 =head2 Model enumeration
 
