@@ -30,7 +30,6 @@ CInet::ManySAT - A collection of SAT solvers
 package CInet::ManySAT;
 
 use Modern::Perl 2018;
-use Scalar::Util qw(reftype);
 use List::Util qw(first);
 use Carp;
 
@@ -157,11 +156,7 @@ can be used for model checking or consistency checking as well.
 
 sub model {
     my $self = shift;
-
-    my $assump = do {
-        no warnings 'uninitialized';
-        reftype($_[0]) eq 'ARRAY' ? shift : [ ]
-    };
+    my $assump = ref $_[0] eq 'ARRAY' ? shift : [ ];
 
     my $feed = $self->dimacs($assump);
     # cadical returns 0 on error and 10 or 20 when it terminated.
@@ -193,11 +188,7 @@ This method raises an error if the solver terminated abnormally.
 
 sub count {
     my $self = shift;
-
-    my $assump = do {
-        no warnings 'uninitialized';
-        reftype($_[0]) eq 'ARRAY' ? shift : [ ]
-    };
+    my $assump = ref $_[0] eq 'ARRAY' ? shift : [ ];
 
     my %opts = @_;
     my $feed = $self->dimacs($assump);
@@ -242,11 +233,7 @@ used to control the enumeration.
 
 sub all {
     my $self = shift;
-
-    my $assump = do {
-        no warnings 'uninitialized';
-        reftype($_[0]) eq 'ARRAY' ? shift : [ ]
-    };
+    my $assump = ref $_[0] eq 'ARRAY' ? shift : [ ];
 
     my $feed = $self->dimacs($assump);
     my ($in, $out);

@@ -1,7 +1,6 @@
 requires 'Modern::Perl', '>= 1.20180000';
 requires 'Carp';
 requires 'List::Util';
-requires 'Scalar::Util';
 requires 'Path::Tiny';
 
 requires 'FFI::Platypus';

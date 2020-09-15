@@ -24,7 +24,6 @@ our $VERSION = "v1.0.0";
 
 use Modern::Perl 2018;
 use List::Util qw(max);
-use Scalar::Util qw(reftype);
 use Carp;
 
 use Role::Tiny::With;
@@ -77,8 +76,7 @@ sub _finish_current {
 sub add {
     my $self = shift;
     for (@_) {
-        no warnings 'uninitialized';
-        if (reftype($_) eq 'ARRAY') {
+        if (ref $_ eq 'ARRAY') {
             $self->_finish_current;
             $self->_update_maxvar(@$_);
             $self->{cadical}->add($_) for @$_;
@@ -125,12 +123,7 @@ was interrupted. All assumptions are cleared afterwards.
 
 sub solve {
     my $self = shift;
-
-    my $assump = do {
-        no warnings 'uninitialized';
-        reftype($_[0]) eq 'ARRAY' ?
-            shift : [ ]
-    };
+    my $assump = ref $_[0] eq 'ARRAY' ? shift : [ ];
 
     my $vars = max($self->{maxvar}, map { abs } $assump->@*);
     $self->{cadical}->assume($_) for $assump->@*;

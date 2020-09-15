@@ -16,7 +16,6 @@ package CInet::ManySAT::ClauseStorage;
 
 use Modern::Perl 2018;
 use List::Util qw(max);
-use Scalar::Util qw(reftype);
 use Carp;
 
 use Role::Tiny;
@@ -79,8 +78,7 @@ sub add {
     my $self = shift;
 
     for (@_) {
-        no warnings 'uninitialized';
-        if (reftype($_) eq 'ARRAY') {
+        if (ref $_ eq 'ARRAY') {
             $self->_finish_current;
             $self->_update_maxvar($_);
             push $self->{clauses}->@*, $_;
@@ -114,11 +112,7 @@ Calling this method closes and adds the current clause to the formula.
 
 sub dimacs {
     my $self = shift;
-
-    my $assump = do {
-        no warnings 'uninitialized';
-        reftype($_[0]) eq 'ARRAY' ? shift : [ ];
-    };
+    my $assump = ref $_[0] eq 'ARRAY' ? shift : [ ];
 
     my $clauses = $self->_finish_current->{clauses};
     my $assumpcl = join "\n", map { "$_ 0" } $assump->@*;

@@ -17,7 +17,6 @@ CInet::ManySAT::Base - Common role for ManySAT solvers
 package CInet::ManySAT::Base;
 
 use Modern::Perl 2018;
-use Scalar::Util qw(reftype);
 use Path::Tiny;
 use Carp;
 
@@ -108,25 +107,42 @@ sub read {
     $self
 }
 
-sub _read_cnf {
-    no warnings 'uninitialized';
+sub _read_type {
     my $cnf = shift;
 
-    if (reftype($cnf) eq 'ARRAY') {
+    if (ref $cnf eq 'ARRAY') {
+        return 'ARRAY';
+    }
+    elsif (ref $cnf eq 'CODE') {
+        return 'CODE';
+    }
+    elsif (path($cnf)->is_file) {
+        return 'FILE';
+    }
+    else {
+        return 'DATA';
+    }
+}
+
+sub _read_cnf {
+    my $cnf = shift;
+    my $type = _read_type($cnf);
+
+    if ($type eq 'ARRAY') {
         my $i = 0;
         return sub {
             return undef if $i > $cnf->$#*;
             return _read_clause($cnf->[$i++]);
         };
     }
-    elsif (reftype($cnf) eq 'CODE') {
+    elsif ($type eq 'CODE') {
         return sub {
             my $clause = $cnf->();
             return undef if not defined $clause;
             return _read_clause($clause);
         };
     }
-    elsif (path($cnf)->is_file) {
+    elsif ($type eq 'FILE') {
         my $fh = path($cnf)->openr_raw;
         return sub {
             if (eof $fh) {
@@ -151,9 +167,8 @@ sub _read_cnf {
 }
 
 sub _read_clause {
-    no warnings 'uninitialized';
     my $clause = shift;
-    return $clause if reftype($clause) eq 'ARRAY';
+    return $clause if ref $clause eq 'ARRAY';
     return [split / /, $clause];
 }
 
