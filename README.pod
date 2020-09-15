@@ -24,6 +24,10 @@ CInet::ManySAT - A collection of SAT solvers
         $all->cancel and last if ++$count > $caring_for;
     }
 
+=head2 VERSION
+
+This document describes CInet::ManySAT v1.0.0.
+
 =head1 DESCRIPTION
 
 C<CInet::ManySAT> provides a common interface to a variety of solvers for
