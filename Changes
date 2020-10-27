@@ -1,5 +1,9 @@
 Revision history for perl module CInet::ManySAT
 
+v1.1.0 2020-10-27
+
+  - Expose ClauseStorage->clauses
+
 v1.0.0 2020-09-15
 
   - Initial release

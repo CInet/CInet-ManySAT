@@ -26,7 +26,7 @@ CInet::ManySAT - A collection of SAT solvers
 
 =head2 VERSION
 
-This document describes CInet::ManySAT v1.0.0.
+This document describes CInet::ManySAT v1.1.0.
 
 =head1 DESCRIPTION
 

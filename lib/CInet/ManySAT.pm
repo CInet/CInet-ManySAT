@@ -26,14 +26,14 @@ CInet::ManySAT - A collection of SAT solvers
 
 =head2 VERSION
 
-This document describes CInet::ManySAT v1.0.0.
+This document describes CInet::ManySAT v1.1.0.
 
 =cut
 
 # ABSTRACT: A collection of SAT solvers
 package CInet::ManySAT;
 
-our $VERSION = "v1.0.0";
+our $VERSION = "v1.1.0";
 
 use Modern::Perl 2018;
 use List::Util qw(first);
