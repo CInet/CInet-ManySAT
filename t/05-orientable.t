@@ -21,6 +21,14 @@ use List::Util qw(uniqstr);
 use CInet::ManySAT qw(sat_all);
 use CInet::ManySAT::Incremental;
 
+sub elapsed_time (&) {
+    use Time::HiRes qw(time);
+    my $start = time;
+    shift->();
+    my $end = time;
+    $end - $start
+}
+
 sub to_string {
     join '', map { $_ > 0 ? '0' : '1' } shift->@*
 }
@@ -53,23 +61,31 @@ sub lift {
     [ map { $_ > 0 ? -(2*$_-1) : 2*(-$_)-1 } shift->@* ]
 }
 
+my (@O1, @O2, @O3);
+
 # 1. Known axioms.
-my @O1 = sort map { to_string($_) }
-    sat_all(path('t', 'orientable4.cnf'))->list;
-is 0+ @O1, 629, 'method 1 has 629 solutions';
+diag sprintf "Lnenicka/Matus axioms: %.5f ms", 1000 * elapsed_time {
+    @O1 = sort map { to_string($_) }
+        sat_all(path('t', 'orientable4.cnf'))->list;
+    is 0+ @O1, 629, 'method 1 has 629 solutions';
+};
 
 # 2. Projection of oriented gaussoids.
-my @O2 = uniqstr sort map { to_string($_) }
-    map { project($_) }
-    sat_all(path('t', 'oriented4.cnf'))->list;
-is 0+ @O2, 629, 'method 2 has 629 solutions';
+diag sprintf "Projection of oriented gaussoids: %.5f ms", 1000 * elapsed_time {
+    @O2 = uniqstr sort map { to_string($_) }
+        map { project($_) }
+        sat_all(path('t', 'oriented4.cnf'))->list;
+    is 0+ @O2, 629, 'method 2 has 629 solutions';
+};
 
 # 3. Orientability test over all gaussoids.
-my $orient = CInet::ManySAT::Incremental->new->read(path('t', 'oriented4.cnf'));
-my @O3 = sort map { to_string($_) }
-    grep { $orient->model(lift($_)) }
-    sat_all(path('t', 'gaussoid4.cnf'))->list;
-is 0+ @O3, 629, 'method 3 has 629 solutions';
+diag sprintf "Orientability tests with incremental solver: %.5f ms", 1000 * elapsed_time {
+    my $orient = CInet::ManySAT::Incremental->new->read(path('t', 'oriented4.cnf'));
+    @O3 = sort map { to_string($_) }
+        grep { $orient->model(lift($_)) }
+        sat_all(path('t', 'gaussoid4.cnf'))->list;
+    is 0+ @O3, 629, 'method 3 has 629 solutions';
+};
 
 cmp_deeply \@O1, \@O2, 'results of method 1 and method 2 coincide';
 cmp_deeply \@O1, \@O3, 'results of method 1 and method 3 coincide';

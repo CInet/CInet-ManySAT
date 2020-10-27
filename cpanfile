@@ -18,6 +18,7 @@ requires 'CInet::Alien::MiniSAT::All';
 on 'test' => sub {
     requires 'Test::More';
     requires 'Test::Deep';
+    requires 'Time::HiRes';
     requires 'Path::Tiny';
     requires 'List::Util';
 };
