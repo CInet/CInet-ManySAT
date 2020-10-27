@@ -93,6 +93,21 @@ sub add {
 
 =head2 Provided methods
 
+=head3 clauses
+
+    my $clauses = $solver->clauses;
+
+Returns the stored formula. This is an arrayref of clauses, each
+of which is an arrayref of integers. You should not modify the
+array behind this reference. Calling this method causes the current
+clause to be finished off.
+
+=cut
+
+sub clauses {
+    shift->_finish_current->{clauses}
+}
+
 =head3 dimacs
 
     my $feed = $solver->dimacs($assump);

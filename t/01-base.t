@@ -13,4 +13,6 @@ is CInet::ManySAT::_read_type(path('t', 'markov5.cnf')), 'FILE', 'existing file'
 is CInet::ManySAT::_read_type(path('t', 'foobar.cnf')), 'DATA', 'string (unfortunately)';
 is CInet::ManySAT::_read_type(path('t', 'markov5.cnf')->slurp_raw), 'DATA', 'string';
 
+is 0+ CInet::ManySAT->new->read(path('t', 'markov5.cnf'))->clauses->@*, 1800, 'correct axiom count';
+
 done_testing;
