@@ -61,6 +61,8 @@ Terminating the arrayref with a zero literal is not required but allowed.
 
 =back
 
+=cut
+
 requires qw(add);
 
 =head2 Provided methods
