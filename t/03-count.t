@@ -14,6 +14,7 @@ my %COUNT = (
     'markov5.cnf'     => 1024,
     'LUBF5.cnf'       => 1166,
     'UBF5.cnf'        => 206,
+    'LUB5.cnf'        => 0,
 );
 
 for (sort keys %COUNT) {

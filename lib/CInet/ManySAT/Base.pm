@@ -91,7 +91,7 @@ return values are treated just like the items in the arrayref case.
 
 =item *
 
-Otherwise the argument is stringified. It is points to an existing
+Otherwise the argument is stringified. If it points to an existing
 file, that file is read as a DIMACS CNF file. If all else fails,
 it is assumed that the string itself is the contents of a DIMACS CNF
 file.

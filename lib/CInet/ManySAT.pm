@@ -202,13 +202,13 @@ sub count {
     if ($risk == 0) {
         die "dsharp exited with code @{[ $? >> 8 ]}"
             unless run [dsharp], $feed, \my $out;
-        my $mc = first { $_ } map { /^#SAT.*?(\d+)$/g } split /\n/, $out;
+        my $mc = first { defined $_ } map { /^#SAT.*?(\d+)$/g } split /\n/, $out;
         $mc
     }
     elsif (0 < $risk and $risk < 1) {
         die "ganak exited with code @{[ $? >> 8 ]}"
             unless run [ganak, '-delta', $risk, '-'], $feed, \my $out;
-        my $mc = first { $_ } map { /^s mc (\d+)/g } split /\n/, $out;
+        my $mc = first { defined $_ } map { /^s mc (\d+)/g } split /\n/, $out;
         $mc
     }
     else {
