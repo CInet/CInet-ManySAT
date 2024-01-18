@@ -1,0 +1,111 @@
+#!/usr/bin/env perl
+
+=encoding utf8
+
+=head1 NAME
+
+sat - Solve the Boolean SATisfiability problem
+
+=head1 SYNOPSIS
+
+    sat formula.cnf                 # Check satisfiability
+    sat --count=[risk] formula.cnf  # Count satisfying assignments
+    sat --all formula.cnf           # Enumerate satisfying assignments
+
+=cut
+
+use Modern::Perl 2018;
+use CInet::ManySAT;
+
+use Getopt::Long;
+use Pod::Usage;
+
+=head1 OPTIONS
+
+=over
+
+=item B<--count>=[I<risk>]
+
+Count satisfying assignments. By default, an exact model counter is used.
+If the I<risk> argument is given and a floating point number between C<0.0>
+and C<1.0>, a probabilistic model counter is invoked instead with its risk
+parameter set to this value.
+
+=item B<--all>
+
+Enumerate all satisfying assignments.
+
+=cut
+
+GetOptions(
+  "h|help" => \my $help,
+  "count:f" => \my $count,
+  "all" => \my $all,
+) or pod2usage(2);
+
+pod2usage(-exitval => 0, -verbose => 1) if $help;
+
+if (defined($count) and defined($all)) {
+    pod2usage(-message => <<~'EOT', -exitval => 2);
+    Only one of --count and --all can be specified at a time.
+    EOT
+}
+
+=head1 DESCRIPTION
+
+This program is an interface to various types of SAT solvers. Given a CNF file,
+by default it will invoke a simple SAT solver and decide whether the formula
+has a satisfying assignment or not. If it does, the assignment is printed and
+the program exits with code C<0>. Otherwise nothing is printed and it exits
+with code C<1>.
+
+Using the options B<--count> and B<--all>, the satisfying assignments can also
+be counted or enumerated. In all cases, the exit code is C<0> if there is at
+least one satisfying assignment and C<1> if there is not.
+
+If no CNF file is given, standard input is read and fed to the solver.
+
+=cut
+
+my $file = shift;
+if (not defined $file) {
+    local $/;
+    $file = <>;
+}
+my $solver = CInet::ManySAT->new->read($file);
+
+my $status = 1; # found no models
+if ($all) {
+    my $all = $solver->all;
+    while (defined(my $model = $all->next)) {
+        say join(' ', @$model);
+        $status = 0;
+    }
+}
+elsif (defined($count) and not $count) {
+    my $c = $solver->count;
+    say $c;
+    $status = 0 if $c > 0;
+}
+elsif (defined($count)) {
+    my $c = $solver->count(risk => $count);
+    say $c;
+    $status = 0 if $c > 0;
+}
+else {
+    my $model = $solver->model;
+    say join(' ', @$model) if defined $model;
+    $status = 0 if defined $model;
+}
+exit $status;
+
+=head1 AUTHOR
+
+Tobias Boege <tobs@taboege.de>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (C) 2024 by Tobias Boege.
+
+This is free software; you can redistribute it and/or
+modify it under the terms of the Artistic License 2.0.
