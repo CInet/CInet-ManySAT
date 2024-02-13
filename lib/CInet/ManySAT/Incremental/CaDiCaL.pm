@@ -44,14 +44,14 @@ Frees the internal solver object when the Perl object goes out of scope.
 The formula is made up of clauses which are made up of literals. This function
 adds a single literal to the "current clause". Adding the C<0> literal closes
 the current clause and starts a new one. Closing the last clause before a
-call to L<solve> is optional.
+call to L<solve|/"solve"> is optional.
 
 =head3 assume
 
     # void assume(solver_t* solver, int lit);
     $solver->assume($lit);
 
-Assume that a literal holds for the next call to L<solve>.
+Assume that a literal holds for the next call to L<solve|/"solve">.
 
 =head3 solve
 

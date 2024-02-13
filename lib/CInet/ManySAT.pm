@@ -60,14 +60,14 @@ standard DIMACS CNF format.
 In its simplest form, SAT is about deciding whether a Boolean formula has
 a solution, that is an assignment of true and false to the variables which
 I<satisfies> all the clauses of the formula simultaneously. The SAT solver
-is available through the L<model> method which returns either a I<model>
-of the formula or C<undef> if the formula is not satisfiable. In this
+is available through the L<model|/"model"> method which returns either a
+I<model> of the formula or C<undef> if the formula is not satisfiable. In this
 documentation, the word "model" is used for "satisfying assignment".
-Thus the L<model> method is a witnessing SAT solver, in that it provides
-you with a witness for the "SAT" answer (but not the "UNSAT" answer).
+Thus the L<model|/"model"> method is a witnessing SAT solver, in that it
+provides you with a witness for the "SAT" answer (but not the "UNSAT" answer).
 
-The L<model> method accepts optional I<assumptions>. These come in the form
-of an arrayref of non-zero integers, just like the clauses of the formula.
+The L<model|/"model"> method accepts optional I<assumptions>. These come in the
+form of an arrayref of non-zero integers, just like the clauses of the formula.
 The assumptions fix the truth value of some of the variables and they are
 valid only for the current invocation of the solver. In this way, you can
 use the solver to check if an assignment is I<consistent> with the formula,
@@ -94,7 +94,7 @@ over them all. One of the solvers is exact and the other is probabilistically
 exact, meaning that it delivers the correct answer only with a configurable
 probability. The probabilistic solver is generally faster but it may give
 up on the formula entirely if it finds that it cannot guarantee exactness
-with the given probability. These solvers are accessible through the L<count>
+with the given probability. These solvers are accessible through the L<count|/"count">
 method with its optional C<risk> parameter.
 
 =head2 Model enumeration

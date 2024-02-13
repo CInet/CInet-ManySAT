@@ -73,7 +73,7 @@ requires qw(add);
     $solver->read($dimacs);
     $solver->read($path);
 
-Read some representation of a CNF formula and L<add> it to the solver.
+Read some representation of a CNF formula and L<add|/"add"> it to the solver.
 The following representations are understood:
 
 =over
@@ -81,8 +81,8 @@ The following representations are understood:
 =item *
 
 An arrayref is assumed to contain the clauses. Clauses can either be
-L<add>-compatible arrayrefs or they are assumed to be strings in the
-DIMACS CNF format containing literals.
+L<add|/"add">-compatible arrayrefs or they are assumed to be strings
+in the DIMACS CNF format containing literals.
 
 =item *
 
