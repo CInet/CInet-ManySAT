@@ -69,6 +69,7 @@ sub _finish_current {
     if ($self->{last} != 0) {
         $self->{cadical}->add(0);
         $self->{last} = 0;
+        $self->{nclauses}++;
     }
     $self
 }
@@ -81,11 +82,13 @@ sub add {
             $self->_update_maxvar(@$_);
             $self->{cadical}->add($_) for @$_;
             $self->{cadical}->add(0) unless $_->[$_->$#*] == 0;
+            $self->{nclauses}++;
         }
         else {
             $self->_update_maxvar($_);
             $self->{cadical}->add($_);
             $self->{last} = $_;
+            $self->{nclauses}++ if $_ == 0;
         }
     }
     $self
@@ -103,7 +106,7 @@ with clauses.
 sub new {
     my $class = shift;
     my $solver = CInet::ManySAT::Incremental::CaDiCaL->new;
-    bless { cadical => $solver, maxvar => 0, last => 0 }, $class
+    bless { cadical => $solver, maxvar => 0, last => 0, nclauses => 0 }, $class
 }
 
 =head3 solve
@@ -158,6 +161,19 @@ sub model {
     not(defined $sat) ? die "cadical gave up" :
         not($sat) ? undef :
             [ map { $self->{cadical}->val($_) } 1 .. $self->{vars} ]
+}
+
+=head3 description
+
+    my $str = $solver->description;
+
+Returns a human-readable description of the object.
+
+=cut
+
+sub description {
+    my $self = shift;
+    'Incremental SAT solver holding ' . $self->{nclauses} . ' clauses'
 }
 
 =head1 AUTHOR

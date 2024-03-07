@@ -252,6 +252,19 @@ sub all {
     CInet::ManySAT::All->new($pid => $out)
 }
 
+=head3 description
+
+    my $str = $solver->description;
+
+Returns a human-readable description of the object.
+
+=cut
+
+sub description {
+    my $self = shift;
+    'Multi-purpose SAT solver holding ' . scalar($self->clauses->@*) . ' clauses'
+}
+
 =head2 EXPORTS
 
 The following functions are exported on demand:
