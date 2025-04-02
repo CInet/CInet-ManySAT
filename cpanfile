@@ -11,7 +11,7 @@ requires 'IO::Null';
 requires 'Role::Tiny';
 
 requires 'CInet::Alien::CaDiCaL';
-requires 'CInet::Alien::DSHARP';
+requires 'CInet::Alien::SharpSAT::TD';
 requires 'CInet::Alien::GANAK';
 requires 'CInet::Alien::MiniSAT::All';
 

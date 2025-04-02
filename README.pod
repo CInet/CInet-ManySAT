@@ -131,7 +131,8 @@ of some of the variables for the current run only.
 
 The remaining arguments are treated as options. The only supported option
 currently is C<risk>. If specified with a non-zero probability, it causes
-the probabilistically exact solver to be invoked.
+the probabilistically exact solver to be invoked. All other options are
+passed to the solver.
 
 This method raises an error if the solver terminated abnormally.
 

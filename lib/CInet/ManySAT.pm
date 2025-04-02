@@ -123,7 +123,7 @@ use IO::Null;
 use CInet::ManySAT::All;
 
 use CInet::Alien::CaDiCaL qw(cadical);
-use CInet::Alien::DSHARP qw(dsharp);
+use CInet::Alien::SharpSAT::TD qw(sharpsat_td);
 use CInet::Alien::GANAK qw(ganak);
 use CInet::Alien::MiniSAT::All qw(nbc_minisat_all);
 
@@ -186,7 +186,8 @@ of some of the variables for the current run only.
 
 The remaining arguments are treated as options. The only supported option
 currently is C<risk>. If specified with a non-zero probability, it causes
-the probabilistically exact solver to be invoked.
+the probabilistically exact solver to be invoked. All other options are
+passed to the solver.
 
 This method raises an error if the solver terminated abnormally.
 
@@ -199,10 +200,11 @@ sub count {
     my %opts = @_;
     my $feed = $self->dimacs($assump);
     my $risk = $opts{risk} // 0;
+    delete $opts{risk};
     if ($risk == 0) {
-        die "dsharp exited with code @{[ $? >> 8 ]}"
-            unless run [dsharp], $feed, \my $out;
-        my $mc = first { defined $_ } map { /^#SAT.*?(\d+)$/g } split /\n/, $out;
+        die "sharpsat_td exited with code @{[ $? >> 8 ]}"
+            unless run [sharpsat_td(%opts)], $feed, \my $out;
+        my $mc = first { defined $_ } map { /^c s exact arb int (\d+)/g } split /\n/, $out;
         $mc
     }
     elsif (0 < $risk and $risk < 1) {

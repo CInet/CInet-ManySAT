@@ -1,5 +1,9 @@
 Revision history for perl module CInet::ManySAT
 
+v1.2.0 2025-04-02
+
+  - Replace DSHARP with SharpSAT-TD as exact model counter
+
 v1.1.0 2020-10-27
 
   - Expose ClauseStorage->clauses
